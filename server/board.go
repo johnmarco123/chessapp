@@ -74,53 +74,87 @@ var board = [8][8] piece {
 // checks if every cell from (x1, y1) to (x2, y2) is empty, except for (x2, y2)
 // itself
 func piecebetween(x1 int, y1 int, x2 int, y2 int) bool {
-	// 1. ensure slope is either abs(1) or 0
-	// 2. get the cells between with a loop and check to make sure they are all
-	// empty
-
-	fmt.Println("at: ("+strconv.Itoa(x1)+" "+strconv.Itoa(y1)+")");
-	var denominator = float64(x2) - float64(x1);
-	// no dividing by zero
-	if (denominator == 0) {
-		denominator = 1;
-	}
-
-	var slope float64 = (float64(y2) - float64(y1)) / float64(denominator);
-	// if there is a decimal place, then we cannot check if there are pieces
-	// between! And therefore its a invalid placement (knights are dealt with
-	// somewhere else)
-	if (slope != float64(int(slope))) { 
-		fmt.Println("piecebetween: BAD SLOPE");
-		return true;
-	}
-
-	var intslope int = int(slope);
-	var yinc int = 0;
-	if (intslope > 0) {
-		yinc = 1;
-	} else if (intslope < 0) {
-		yinc = -1;
+	if (x1 == x2 && y1 == y2) { // same piece
+		return false;
 	}
 
 	var xinc = 0;
-	if (x2 > x1) {
-		xinc = 1;
-	} else if (x2 < x1) {
-		xinc = -1;
-	}
-	
-	fmt.Println("==================================================");
-	fmt.Println("xinc: " + strconv.Itoa(xinc));
-	fmt.Println("yinc: " + strconv.Itoa(yinc));
-	for (x1 != x2 || y1 != y2) {
-		x1 += xinc;
-		y1 += yinc;
-		if (board[y1][x1].Kind != "") { // there is a piece between the two places
-			fmt.Println(board[y1][x1].Kind);
+	var yinc = 0;
+	if (x1 == x2) { // forward/backward move
+		if (y2 > y1) {
+			yinc = 1;
+		} else {
+			yinc = -1;
+		}
+
+		for (y1 != y2) {
+			y1 += yinc;
+			if (y1 == y2) {
+				break;
+			} else if (y1 > 7 || x1 < 0) {
+				fmt.Println("FATAL ERROR, OUT OF BOUNDS y1");
+				return true;
+			}
+			if (board[y1][x1].Kind != "") {
+				fmt.Println("Piece between found! Piece was: " + board[y1][x1].Kind);
+				return true;
+			}
+		}
+
+	} else if (y1 == y2) { // left/right move
+		if (x2 > x1) {
+			xinc = 1;
+		} else {
+			xinc = -1;
+		}
+
+		for (x1 != x2) {
+			x1 += xinc;
+			if (x1 == x2) {
+				break;
+			} else if (x1 > 7 || x1 < 0) {
+				fmt.Println("FATAL ERROR, OUT OF BOUNDS x1");
+				return true;
+			}
+			if (board[y1][x1].Kind != "") {
+				fmt.Println("Piece between found! Piece was: " + board[y1][x1].Kind);
+				return true; 
+			}
+		}
+
+	} else { // ensure that it is a diagonal, and then check if there is pieces between
+		// simply check if the slope is not a decimal, if that is the case,
+		// ignore slope 
+		var slope float64 = (float64(y2) - float64(y1)) / (float64(x2) - float64(x1))
+		if (slope != float64(int(slope))) { // this is not a diagonal line
 			return true;
 		}
-	}
 
+		if (x2 > x1) {
+			xinc = 1;
+		} else {
+			xinc = -1;
+		}
+
+		if (y2 > y1) {
+			yinc = 1;
+		} else {
+			yinc = -1;
+		}
+		for (x2 != x1 && y2 != y1) {
+			x1 += xinc;
+			y1 += yinc;
+			if (x1 == x2 && y2 == y1) {
+				break;
+			} else if (x1 < 0 || x1 > 7 || y1 < 0 || y1 > 7) {
+				fmt.Println("FATAL ERROR, OUT OF BOUNDS x1 OR y1");
+			}
+			if (board[y1][x1].Kind != "") {
+				fmt.Println("Piece between found! Piece was: " + board[y1][x1].Kind);
+				return true;
+			}
+		}
+	}
 	return false;
 }
 
@@ -181,6 +215,103 @@ func legal(p1 piece, p2 piece, x1 int, y1 int, x2 int, y2 int) (string, string) 
 			} else if(p2.Kind != "" && p1.White != p2.White){
 				return col+" "+p1.Kind+" captured a " + p2.Kind, "";
 			}
+		}
+	} else if (p1.Kind == "queen") {
+		if (!piecebetween(x1, y1, x2, y2)) {
+			if (p2.Kind == "") {
+				return col+" "+p1.Kind+" moved successfully", "";
+			} else if(p2.Kind != "" && p1.White != p2.White){
+				return col+" "+p1.Kind+" captured a " + p2.Kind, "";
+			}
+		}
+	} else if (p1.Kind == "king") {
+		// cannot move into check
+		// can only move one square at a time unless castling
+		// can only castle if havent moved and the castle does not put the king in check
+		if (math.Abs(float64(x2-x1)) > 1 || math.Abs(float64(y2-y1)) > 1) { // king can only move one square at a time
+			return "", "king cannot move more then one square at a time";
+		} else if (p2.Kind == "") {
+			return col+" "+p1.Kind+" moved successfully", "";
+		} else if(p2.Kind != "" && p1.White != p2.White){
+			return col+" "+p1.Kind+" captured a " + p2.Kind, "";
+		}
+	} else if (p1.Kind == "knight") { // this is gonna be fun...
+		// knights have 8 valid moves. 2 moves out and then to left one each way
+		// for all 4 dirs
+		var xknightmoves[8] int; // gather all 8 
+		var yknightmoves[8] int; // gather all 8 
+		var idx int = 0;
+		if (y1 > 1) {
+			if (x1 != 0) {
+				xknightmoves[idx] = x1-1
+				yknightmoves[idx] = y1-2
+				idx++;
+			}
+			if (x1 != 7) {
+				xknightmoves[idx] = x1+1
+				yknightmoves[idx] = y1-2
+				idx++;
+			}
+		}
+		if (y1 < 6) {
+			if (x1 > 0) {
+				xknightmoves[idx] = x1-1
+				yknightmoves[idx] = y1+2
+				idx++;
+			}
+			if (x1 < 7) {
+				xknightmoves[idx] = x1+1
+				yknightmoves[idx] = y1+2
+				idx++;
+			}
+		}
+		if (x1 > 1) {
+			if (y1 > 0) {
+				xknightmoves[idx] = x1-2
+				yknightmoves[idx] = y1-1
+				idx++;
+			}
+			if (x1 != 7) {
+				xknightmoves[idx] = x1-2
+				yknightmoves[idx] = y1+1
+				idx++;
+			}
+		}
+		if (x1 < 6) {
+			if (y1 > 0) {
+				xknightmoves[idx] = x1+2
+				yknightmoves[idx] = y1-1
+				idx++;
+			}
+			if (x1 != 7) {
+				xknightmoves[idx] = x1+2
+				yknightmoves[idx] = y1+1
+				idx++;
+			}
+		}
+		for (idx < 7) {
+			// set all invalid knight moves to a impossible value
+			xknightmoves[idx] = 1337;
+			yknightmoves[idx] = 1337;
+			idx++;
+		}
+		var knightmovevalid bool = false;
+		for i := 0; i < len(xknightmoves); i++ {
+			if (x2 == xknightmoves[i] && y2 == yknightmoves[i]) {
+				knightmovevalid = true;
+				break;
+				// move is valid!
+			}
+		}
+		if (!knightmovevalid) {
+			return "", "The square provided is not a valid knight move"
+		}
+		// now we got all valid knight moves, so lets check if the x2, y2 move
+		// is in here
+		if (p2.Kind == "") {
+			return col+" "+p1.Kind+" moved successfully", "";
+		} else if(p2.Kind != "" && p1.White != p2.White){
+			return col+" "+p1.Kind+" captured a " + p2.Kind, "";
 		}
 	}
 	return "", "GENERIC ILLEGAL MOVE MESSAGE";
