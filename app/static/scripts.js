@@ -1,16 +1,13 @@
 const NUMBERSON = false;
 
-function test() {
-    ajx('con', 'services.go?cmd=lol')
-}
-
 function gid(d) {
     return document.getElementById(d);
 }
 
-function ajx(url, callback) {
-    var xhr = new XMLHttpRequest()
-    xhr.open("GET", "http://localhost:3333/"+url)
+function ajxpgn(url, callback, method="GET", payload) {
+    var xhr = new XMLHttpRequest();
+    method = method.toUpperCase();
+    xhr.open(method, url, true)
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4) {
             var res = JSON.parse(xhr.response);
@@ -25,7 +22,13 @@ function ajx(url, callback) {
             console.log(res);
         }
     }
-    xhr.send()
+    if (method == "POST") {
+        console.log("ajxpgn sent post");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.send(payload)
+    } else {
+        xhr.send()
+    }
 }
 
 function getcell(x, y) {
@@ -41,7 +44,7 @@ function initboard() {
     board.addEventListener("mouseup", function(e) {
         var upcell = getcell(e.clientX, e.clientY)
         if (!downcell && !upcell) return;
-        ajx("services?up="+upcell.id+"&down="+downcell.id, function(newboard) {
+        ajxpgn("services?up="+upcell.id+"&down="+downcell.id, function(newboard) {
             for (var i = 0; i < 8; i++) {
                 for (var j = 0; j < 8; j++) {
                     var piece = newboard[i][j];
@@ -65,7 +68,7 @@ function initboard() {
     })
 
 
-    ajx("getboard", function(boardcells) {
+    ajxpgn("getboard", function(boardcells) {
         document.board = boardcells
         for (var i = 0; i < 8; i++) {
             var row = document.createElement('tr');

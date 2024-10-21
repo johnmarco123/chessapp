@@ -1,6 +1,9 @@
 package main
 
 import (
+	"log";
+	"database/sql";
+	"github.com/go-sql-driver/mysql";
 	"encoding/json";
 	"errors";
 	"fmt";
@@ -8,19 +11,54 @@ import (
 	"os";
 )
 
+var db *sql.DB;
+
+
 func logrequest(r *http.Request) {
 	fmt.Printf("Received request: %s %s\n", r.Method, r.URL.Path);
 }
 
 func getroot(w http.ResponseWriter, r *http.Request) {
 	logrequest(r);
-	http.FileServer(http.Dir("./")).ServeHTTP(w, r);
 }
 
 type Response struct {
 	Board [8][8]piece `json:"board"`;
 	Msg string        `json:"msg"`;
 	Err string        `json:"err"`;
+}
+
+// Define a struct for the request body
+type AuthRequest struct {
+    Username string `json:"username"`
+    Password string `json:"password"`
+}
+
+func registerhandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		var req AuthRequest;
+		err := json.NewDecoder(r.Body).Decode(&req);
+		if err != nil {
+			http.Error(w, "Bad request", http.StatusBadRequest);
+		}
+		register(req.Username, req.Password);
+		return;
+	}
+	logrequest(r);
+	http.ServeFile(w, r, "./static/register.html");
+}
+func loginhandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		var req AuthRequest;
+		err := json.NewDecoder(r.Body).Decode(&req);
+		if err != nil {
+			http.Error(w, "Bad request", http.StatusBadRequest);
+		}
+		login(req.Username, req.Password);
+		return;
+	}
+	logrequest(r);
+	http.ServeFile(w, r, "./static/login.html");
 }
 
 func handleservices(w http.ResponseWriter, r *http.Request) {
@@ -43,6 +81,7 @@ func handleservices(w http.ResponseWriter, r *http.Request) {
 }
 
 
+
 func getboard(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json");
     response := Response {
@@ -54,11 +93,47 @@ func getboard(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/", getroot);
+
+    // Capture connection properties.
+    cfg := mysql.Config{
+        User:   "root",
+		// set your db pass in ur environment with this: 
+		// export DB_PASS="your_password"
+		Passwd: os.Getenv("DB_PASS"), 
+        Net:    "tcp",
+        Addr:   "127.0.0.1:3306",
+        DBName: "chessapp",
+    }
+    // Get a database handle.
+    var err error
+    db, err = sql.Open("mysql", cfg.FormatDSN())
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    pingErr := db.Ping()
+    if pingErr != nil {
+        log.Fatal(pingErr)
+    }
+    fmt.Println("DB Connected!")
+
+
+
+
+	fs := http.FileServer(http.Dir("./static"));
+	http.Handle("/", fs);
+
+	http.HandleFunc("/login/", loginhandler);
+	http.HandleFunc("/register/", registerhandler);
 	http.HandleFunc("/services/", handleservices);
 	http.HandleFunc("/getboard/", getboard);
 
-	err := http.ListenAndServe(":3333", nil);
+
+	fmt.Println("Server started!");
+	err = http.ListenAndServe(":3333", nil);
+
+
+
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n");
 	} else if err != nil {

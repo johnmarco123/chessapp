@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="/styles.css">
+</head>
+<body>
+    <input id="username" placeholder="username">
+    <input type="password" id="password" placeholder="password">
+    <button onclick="login()">Login</button>
+    <p>Don't have an account? Register <a href="/register">here</a></p>
+    <script>
+        function login() {
+            var username = gid("username").value;
+            var password = gid("password").value;
+            var action= "login";
+            if (username == "" || password == "") {
+                alert("Your username or password was blank upon login request!"); 
+                return;
+            }
+            var payload = JSON.stringify({username: username, password: password, action: action});
+            ajxpgn("authenticate", null, "POST", payload);
+        }
+    </script>
+    <script src="/scripts.js"></script>
+</body>
+</html>

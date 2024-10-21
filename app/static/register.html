@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="/styles.css">
+</head>
+<body>
+    <input id="username" placeholder="username">
+    <input type="password" id="password" placeholder="password">
+    <input type="password" id="confirmpassword" placeholder="repeat password">
+    <button onclick="register()">Register</button>
+    <p>Already have an account? If so, login <a href="/login">here</a></p>
+    <script>
+        function register() {
+            var username = gid("username").value;
+            var password = gid("password").value;
+            var repeatpassword = gid("confirmpassword").value;
+            var action= "register";
+            if (username == "" || password == "" || repeatpassword == "") {
+                alert("Your username or password was blank upon registration!"); 
+                return;
+            }
+            if (password != repeatpassword) {
+                alert("Your passwords do not match!"); 
+                return;
+            }
+            var payload = JSON.stringify({username: username, password: password, action: action});
+            ajxpgn("authenticate", null, "POST", payload);
+        }
+    </script>
+    <script src="/scripts.js"></script>
+</body>
+</html>
