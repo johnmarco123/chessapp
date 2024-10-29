@@ -12,6 +12,7 @@ import (
 )
 
 var db *sql.DB;
+var salt = "vRl5rq8TQjUGPl1QOoaKQJBhq";
 
 
 func logrequest(r *http.Request) {
@@ -41,12 +42,22 @@ func registerhandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			http.Error(w, "Bad request", http.StatusBadRequest);
 		}
-		register(req.Username, req.Password);
+		register(w, r, req.Username, req.Password);
 		return;
 	}
 	logrequest(r);
 	http.ServeFile(w, r, "./static/register.html");
 }
+
+func homehandler(w http.ResponseWriter, r *http.Request) {
+	good := validatecookie(w, r);
+	if (good) {
+		http.ServeFile(w, r, "./static/game.html");
+	} else {
+		http.ServeFile(w, r, "./static/login.html");
+	}
+}
+
 func loginhandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		var req AuthRequest;
@@ -54,7 +65,7 @@ func loginhandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			http.Error(w, "Bad request", http.StatusBadRequest);
 		}
-		login(req.Username, req.Password);
+		login(w, r, req.Username, req.Password);
 		return;
 	}
 	logrequest(r);
@@ -117,12 +128,10 @@ func main() {
     }
     fmt.Println("DB Connected!")
 
+    fs := http.FileServer(http.Dir("static"));
+    http.Handle("/static/", http.StripPrefix("/static/", fs)) // Serve static files under /static/
 
-
-
-	fs := http.FileServer(http.Dir("./static"));
-	http.Handle("/", fs);
-
+	http.HandleFunc("/", homehandler)
 	http.HandleFunc("/login/", loginhandler);
 	http.HandleFunc("/register/", registerhandler);
 	http.HandleFunc("/services/", handleservices);
@@ -131,8 +140,6 @@ func main() {
 
 	fmt.Println("Server started!");
 	err = http.ListenAndServe(":3333", nil);
-
-
 
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("server closed\n");

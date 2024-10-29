@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" type="text/css" href="/styles.css">
+    <link rel="stylesheet" type="text/css" href="./static/styles.css">
 </head>
 <body>
     <input id="username" placeholder="username">
     <input type="password" id="password" placeholder="password">
     <input type="password" id="confirmpassword" placeholder="repeat password">
     <button onclick="register()">Register</button>
-    <p>Already have an account? If so, login <a href="/login">here</a></p>
+    <p>Already have an account? If so, login <a href="/login/">here</a></p>
     <script>
         function register() {
             var username = gid("username").value;
@@ -27,6 +27,6 @@
             ajxpgn("authenticate", null, "POST", payload);
         }
     </script>
-    <script src="/scripts.js"></script>
+    <script src="./static/scripts.js"></script>
 </body>
 </html>

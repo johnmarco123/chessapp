@@ -10,7 +10,10 @@ function ajxpgn(url, callback, method="GET", payload) {
     xhr.open(method, url, true)
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4) {
-            var res = JSON.parse(xhr.response);
+            var res = xhr.response;
+            if (res) {
+                res = JSON.parse(res);
+            }
             // if there is a callback we use it with the response we get 
             if (res.err) {
                 alert(res.err);
@@ -19,7 +22,6 @@ function ajxpgn(url, callback, method="GET", payload) {
             if (callback) { 
                 callback(res.board);
             }
-            console.log(res);
         }
     }
     if (method == "POST") {

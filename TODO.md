@@ -1,7 +1,13 @@
 * [X] Connect to the database
 * [X] Add Registration
 * [X] Add login
+
+****************************************************************************************************
+CURRENT
 * [ ] Add cookies so we know who is logged in and what to show that user
+****************************************************************************************************
+
+
 * [ ] add turn based system
 * [ ] En passant
 * [ ] checkable king
