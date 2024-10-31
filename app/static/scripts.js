@@ -11,8 +11,12 @@ function ajxpgn(url, callback, method="GET", payload) {
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4) {
             var res = xhr.response;
-            if (res) {
-                res = JSON.parse(res);
+            try {
+                if (res) {
+                    res = JSON.parse(res);
+                }
+            } catch (err) {
+                console.log(err);
             }
             // if there is a callback we use it with the response we get 
             if (res.err) {
@@ -25,7 +29,6 @@ function ajxpgn(url, callback, method="GET", payload) {
         }
     }
     if (method == "POST") {
-        console.log("ajxpgn sent post");
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.send(payload)
     } else {
@@ -70,7 +73,7 @@ function initboard() {
     })
 
 
-    ajxpgn("getboard", function(boardcells) {
+    ajxpgn("/getboard", function(boardcells) {
         document.board = boardcells
         for (var i = 0; i < 8; i++) {
             var row = document.createElement('tr');

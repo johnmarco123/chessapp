@@ -52,14 +52,15 @@ func registerhandler(w http.ResponseWriter, r *http.Request) {
 func homehandler(w http.ResponseWriter, r *http.Request) {
 	good := validatecookie(w, r);
 	if (good) {
-		http.ServeFile(w, r, "./static/game.html");
+		http.ServeFile(w, r, "./static/home.html");
 	} else {
-		http.ServeFile(w, r, "./static/login.html");
+		http.Redirect(w, r, "/login/", http.StatusSeeOther);
 	}
 }
 
 func loginhandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
+	fmt.Println("Authentication!");
+	if r.Method == http.MethodPost && r.URL.Path == "/login/authenticate"{
 		var req AuthRequest;
 		err := json.NewDecoder(r.Body).Decode(&req);
 		if err != nil {
@@ -70,6 +71,10 @@ func loginhandler(w http.ResponseWriter, r *http.Request) {
 	}
 	logrequest(r);
 	http.ServeFile(w, r, "./static/login.html");
+}
+
+func logouthandler(w http.ResponseWriter, r *http.Request) {
+	logout(w, r);
 }
 
 func handleservices(w http.ResponseWriter, r *http.Request) {
@@ -90,8 +95,6 @@ func handleservices(w http.ResponseWriter, r *http.Request) {
     // Encode the response as JSON and write it to the response writer
     json.NewEncoder(w).Encode(response);
 }
-
-
 
 func getboard(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json");
@@ -132,7 +135,9 @@ func main() {
     http.Handle("/static/", http.StripPrefix("/static/", fs)) // Serve static files under /static/
 
 	http.HandleFunc("/", homehandler)
+	http.HandleFunc("/home/", homehandler);
 	http.HandleFunc("/login/", loginhandler);
+	http.HandleFunc("/logout/", logouthandler);
 	http.HandleFunc("/register/", registerhandler);
 	http.HandleFunc("/services/", handleservices);
 	http.HandleFunc("/getboard/", getboard);
