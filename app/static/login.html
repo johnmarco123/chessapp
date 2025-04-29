@@ -18,7 +18,10 @@
                 return;
             }
             var payload = JSON.stringify({username: username, password: password, action: action});
-            ajxpgn("authenticate", null, "POST", payload);
+            ajxpgn("/login/authenticate", function(board) {
+                // after authentication, we redirect to home
+                window.location.href = "/home/";
+            }, "POST", payload);
         }
     </script>
     <script src="/static/scripts.js"></script>
